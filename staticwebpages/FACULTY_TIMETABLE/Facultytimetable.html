@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Faculty-wise Timetable</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <style>
+        table {
+            width: 80%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background: lightblue;
+        }
+        .title {
+            font-weight: bold;
+            font-size: 24px;
+            margin-top: 30px;
+        }
+        .faculty-title {
+            font-weight: bold;
+            font-size: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Upload CSV File</h2>
+<SELECT id='faculty_id'>
+	<option value="ALL"> Select  ALL faculty</option>
+	<OPTION VALUE='KMY'> k mAYURI </OPTION>
+	<OPTION VALUE='CVR'> CVR </OPTION>
+</SELECT>
+<input type="file" id="csvFile" accept=".csv">
+
+<div id="tables"></div>
+
+<script>
+ 
+
+document.getElementById("csvFile").addEventListener("change", function () {
+    let fac_id=document.getElementById('faculty_id').value;
+	
+    Papa.parse(this.files[0], {
+        header: true,
+        skipEmptyLines: true,
+        complete: function (result) {
+            processCSV(result.data,fac_id);
+        }
+    });
+});
+
+function processCSV(data, fac_id) {
+   const facultyTable = {}; 
+    data.forEach(row => {
+        const faculty = row["FACULTY"];
+        const day = row["DAY"];
+        const session = row["SESSION"];
+        const course = row["COURSE"];
+        const room = row["ROOM"];
+        const batch = row["BATCH"];
+
+        // ✔ CASE 1: User selected ALL → include all rows
+        if (fac_id === "ALL") {
+            if (!faculty || !day || !session) return;
+
+            if (!facultyTable[faculty]) {
+                facultyTable[faculty] = {};
+            }
+            if (!facultyTable[faculty][day]) {
+                facultyTable[faculty][day] = { FN: "", AN: "" };
+            }
+
+            facultyTable[faculty][day][session] =
+                `${course}<br>Room: ${room}<br>Batch: ${batch}`;
+        }
+// individual faculty
+       else if (fac_id === faculty) {
+            if (!faculty || !day || !session) return;
+
+            if (!facultyTable[faculty]) {
+                facultyTable[faculty] = {};
+            }
+            if (!facultyTable[faculty][day]) {
+                facultyTable[faculty][day] = { FN: "", AN: "" };
+            }
+
+            facultyTable[faculty][day][session] =
+                `${course}<br>Room: ${room}<br>Batch: ${batch}`;
+        }
+    });
+
+    buildFacultyTables(facultyTable);
+}
+
+
+function buildFacultyTables(facultyTable) {
+    const container = document.getElementById("tables");
+    container.innerHTML = "<div class='title'>Faculty-wise Timetable</div>";
+
+    const days = ["MON", "TUE", "WED", "THU", "FRI", "SAT"];
+
+    for (const faculty in facultyTable) {
+        const table = document.createElement("table");
+
+        const title = document.createElement("div");
+        title.className = "faculty-title";
+        title.innerHTML = `Faculty: ${faculty}`;
+        container.appendChild(title);
+
+        let html =
+            "<tr><th>DAY</th><th>FN</th><th rowspan=7>L<br>U<br>N<br>C<br>H</th><th>AN</th></tr>";
+
+        days.forEach(day => {
+            const fn = facultyTable[faculty][day]?.FN || "";
+            const an = facultyTable[faculty][day]?.AN || "";
+
+            html += `
+                <tr>
+                    <td>${day}</td>
+                    <td>${fn}</td>
+                    <td>${an}</td>
+                </tr>
+            `;
+        });
+
+        table.innerHTML = html;
+        container.appendChild(table);
+    }
+}
+</script>
+
+</body>
+</html>
